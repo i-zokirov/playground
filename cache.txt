@@ -1,0 +1,154 @@
+### Problem Breakdown and Approach:
+
+The challenge was to efficiently query data from cache entries based on timestamps. For each query, you had to find the most recent cache entry (with the largest timestamp less than or equal to the query timestamp) for a given key. If no such entry existed, you had to return `-1`.
+
+### Key Components:
+1. **Cache Entries**: Stored with timestamps, keys, and values.
+2. **Queries**: Each query provided a key and a timestamp. The task was to return the value associated with the latest timestamp that is less than or equal to the query timestamp.
+3. **Output**: For each query, return the corresponding value or `-1` if no valid cache entry is found.
+
+### Initial Issues:
+1. **Timestamp Handling**: The initial solution treated timestamps as integers (`parseInt`), which was incorrect. Timestamps were in a `hh:mm:ss` string format, which needed to be handled as strings and compared lexicographically.
+   
+2. **Binary Search Logic**: The logic to search for the largest timestamp less than or equal to the query timestamp was not handling the comparison of timestamps correctly due to treating them as integers.
+
+### Solution Steps:
+1. **Store Cache Entries by Key**: 
+   - Use a `Map` to store cache entries for each key. Each key mapped to an array of `{timestamp, value}` objects.
+   
+2. **Sort by Timestamp**: 
+   - Since timestamps were in the format `hh:mm:ss`, they were treated as strings. To handle this, I used `localeCompare` to compare and sort the timestamps correctly.
+
+3. **Binary Search**: 
+   - To find the most recent timestamp less than or equal to the query timestamp, I used binary search. This allowed efficient querying of large datasets.
+   
+4. **Handling Edge Cases**: 
+   - If no entries were found for a given key or if no timestamps were less than or equal to the query timestamp, the function returned `-1`.
+
+### Key Fixes:
+1. **Handling Timestamps as Strings**:
+   - Timestamps were compared lexicographically using `localeCompare`. This allowed correct sorting and comparison of times in `hh:mm:ss` format.
+   
+2. **Efficient Search with Binary Search**:
+   - Once the entries for each key were sorted by timestamp, binary search was used to find the largest timestamp less than or equal to the query timestamp. This ensured efficient querying even for large datasets.
+
+### Final Code Explanation:
+
+```javascript
+'use strict';
+
+const fs = require('fs');
+
+process.stdin.resume();
+process.stdin.setEncoding('utf-8');
+
+let inputString = '';
+let currentLine = 0;
+
+process.stdin.on('data', function(inputStdin) {
+    inputString += inputStdin;
+});
+
+process.stdin.on('end', function() {
+    inputString = inputString.split('\n');
+    main();
+});
+
+function readLine() {
+    return inputString[currentLine++];
+}
+
+// Binary search function to find the largest timestamp <= queryTimestamp
+function binarySearch(entries, queryTimestamp) {
+    let low = 0;
+    let high = entries.length - 1;
+    let result = -1;
+
+    while (low <= high) {
+        const mid = Math.floor((low + high) / 2);
+        if (entries[mid].timestamp <= queryTimestamp) {
+            result = mid;  // This might be the answer, search right for a larger valid timestamp
+            low = mid + 1;
+        } else {
+            high = mid - 1;  // Search left
+        }
+    }
+    return result;
+}
+
+function getQueryAnswers(cache_entries, queries) {
+    // Step 1: Store cache entries by key with a sorted list of {timestamp, value}
+    const cacheMap = new Map();
+
+    cache_entries.forEach(entry => {
+        const [timestamp, key, value] = entry;
+        if (!cacheMap.has(key)) {
+            cacheMap.set(key, []);
+        }
+        cacheMap.get(key).push({ timestamp, value: parseInt(value) });
+    });
+
+    // Step 2: Sort each key's entries by timestamp (ascending order)
+    cacheMap.forEach((entries) => {
+        entries.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+    });
+
+    // Step 3: Process each query
+    const results = queries.map(query => {
+        const [key, queryTimestamp] = query;
+
+        if (!cacheMap.has(key)) {
+            return -1;  // No such key exists
+        }
+
+        // Perform binary search to find the closest timestamp <= queryTimestamp
+        const entries = cacheMap.get(key);
+        const index = binarySearch(entries, queryTimestamp);
+
+        if (index === -1) {
+            return -1;  // No valid timestamp found
+        } else {
+            return entries[index].value;
+        }
+    });
+
+    return results;
+}
+
+function main() {
+    const ws = fs.createWriteStream(process.env.OUTPUT_PATH);
+
+    const cache_entriesRows = parseInt(readLine().trim(), 10);
+    const cache_entriesColumns = parseInt(readLine().trim(), 10);
+
+    let cache_entries = Array(cache_entriesRows);
+
+    for (let i = 0; i < cache_entriesRows; i++) {
+        cache_entries[i] = readLine().replace(/\s+$/g, '').split(' ');
+    }
+
+    const queriesRows = parseInt(readLine().trim(), 10);
+    const queriesColumns = parseInt(readLine().trim(), 10);
+
+    let queries = Array(queriesRows);
+
+    for (let i = 0; i < queriesRows; i++) {
+        queries[i] = readLine().replace(/\s+$/g, '').split(' ');
+    }
+
+    const result = getQueryAnswers(cache_entries, queries);
+
+    ws.write(result.join('\n') + '\n');
+
+    ws.end();
+}
+```
+
+### Approach Recap:
+1. **Data Structuring**: Cache entries were stored in a `Map`, where each key had a sorted list of timestamps and values.
+   
+2. **Efficient Querying**: For each query, a binary search was used to efficiently find the largest valid timestamp.
+
+3. **Edge Case Handling**: Returned `-1` for cases where no valid entry existed for the key or no matching timestamp was found.
+
+This approach ensured efficient querying and accurate handling of timestamps, allowing the solution to pass all test cases.

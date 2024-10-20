@@ -1,0 +1,98 @@
+### Problem Explanation:
+The question involves distributing sports cards into packets such that all types of cards (represented by an array of integers) can be evenly divided into a number of packets. The goal is to determine the **minimum number of additional cards** that must be added to each type so that all card types can be evenly divided into packets with the same number of cards of each type.
+
+### Steps to Approach:
+
+1. **Finding the GCD**: 
+   - We want all the card counts to be divisible by a common number, i.e., the **greatest common divisor (GCD)** of the card counts.
+   - For example, if you have 6 and 8 cards, you could divide them into packets of size 2, since both 6 and 8 are divisible by 2 (the GCD of 6 and 8).
+   - If the GCD of the card counts is greater than 1, the card counts can already be divided into some number of packets without adding cards.
+   
+2. **Handling Special Case (GCD = 1)**:
+   - If the GCD of the card counts is 1, it means that the card counts can only be divided by 1. This is not helpful since we need to divide them into **more than 1 packet**.
+   - In this case, the smallest common number of packets is **2**. Therefore, for each card type that has an odd number of cards, we need to add 1 card to make it even (so it can be divided into packets of size 2).
+
+3. **Steps in the Code**:
+   - **Step 1**: Calculate the GCD of all card counts.
+     - If the GCD is greater than 1, we can already divide the cards by that number of packets.
+     - If the GCD is 1, we need to ensure the card counts are divisible by 2, and for this, we add 1 card to every type that has an odd count.
+   
+   - **Step 2**: If the GCD is greater than 1, we need to calculate how many cards to add to make each type divisible by this GCD. For each card count, we calculate the difference between the current number and the nearest number that is divisible by the GCD.
+
+### Code Explanation:
+
+```javascript
+// Helper function to compute GCD of two numbers
+function gcd(a, b) {
+    if (b === 0) {
+        return a;
+    }
+    return gcd(b, a % b);
+}
+
+// Function to compute GCD of an array
+function findGCD(arr) {
+    return arr.reduce((acc, curr) => gcd(acc, curr)); // Reduces array to a single GCD
+}
+```
+- **`gcd(a, b)`**: Uses the Euclidean algorithm to compute the greatest common divisor of two numbers.
+- **`findGCD(arr)`**: Finds the GCD of the entire array by applying the `gcd` function iteratively on the array elements.
+
+```javascript
+function cardPackets(cardTypes) {
+    // Step 1: Find the GCD of the cardTypes array
+    const commonGCD = findGCD(cardTypes);
+    
+    // If GCD is 1, we need to add cards to make a common divisible number greater than 1
+    if (commonGCD === 1) {
+        // In this case, we need to make it divisible by 2
+        const additionalCards = cardTypes.map(card => {
+            return (card % 2 === 0) ? 0 : 1;  // Add 1 card if it's odd
+        });
+        return additionalCards.reduce((sum, curr) => sum + curr, 0); // Sum of additional cards
+    }
+
+    // Step 2: Calculate additional cards when GCD is greater than 1
+    let additionalCards = 0;
+    
+    for (let i = 0; i < cardTypes.length; i++) {
+        const cards = cardTypes[i];
+        // Calculate the required number of cards to make it divisible by common GCD
+        additionalCards += (commonGCD - (cards % commonGCD)) % commonGCD;
+    }
+
+    return additionalCards;
+}
+```
+
+### Explanation of `cardPackets` Function:
+1. **Find the GCD** of all card counts (`cardTypes`).
+   
+   - If the GCD is 1, we know that the card counts cannot be evenly divided into packets greater than 1 without adding cards.
+     - We loop through the array and check each card count. If a card count is **odd**, we add 1 card to make it even, so it can be divided by 2.
+     - We sum the number of additional cards needed and return that value.
+   
+2. **If the GCD is greater than 1**, we need to make sure that all card counts are divisible by this GCD. For each card count:
+   - We calculate how many cards to add so that the number of cards is divisible by the GCD.
+   - The formula `(commonGCD - (cards % commonGCD)) % commonGCD` calculates how many cards to add to make `cards` a multiple of `commonGCD`.
+
+### Example:
+For the input:
+```
+5
+3
+8
+7
+6
+4
+```
+
+1. **Step 1**: The GCD of `[3, 8, 7, 6, 4]` is 1. This means the card counts cannot be evenly divided into packets larger than 1.
+   - For odd numbers (`3`, `7`), we add `1` card to make them even.
+   - The even numbers (`8`, `6`, `4`) do not require additional cards.
+   - Total additional cards = `1 + 0 + 1 + 0 + 0 = 2`.
+
+Thus, the total number of additional cards is `2`.
+
+### Conclusion:
+The key insight is to ensure that all card types can be divided into the same number of packets, which involves calculating the GCD of the card counts and adding the minimum number of cards to make them divisible by the GCD or by 2 (if the GCD is 1).
